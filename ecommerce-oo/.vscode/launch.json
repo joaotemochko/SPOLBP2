@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-EcommerceOoApplication<ecommerce-oo>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.ifsp.spolbp2.ecommerce_oo.EcommerceOoApplication",
+            "projectName": "ecommerce-oo",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

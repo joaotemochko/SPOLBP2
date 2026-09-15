@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce - Checkout OO</title>
+    <!-- Utilizando Tailwind CSS via CDN para um design moderno e rápido sem arquivos extras -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Urbanist', sans-serif;
+            background-color: #0f172a; /* Fundo escuro combinando com os slides */
+            color: #f8fafc;
+        }
+        /* Loader simples para a requisição */
+        .loader {
+            border: 3px solid #334155;
+            border-top: 3px solid #22c55e;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-md w-full border border-slate-700">
+        
+        <!-- Cabeçalho -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Novo Pedido</h1>
+            <p class="text-slate-400 text-sm">Integração com API Spring Boot (Strategy Pattern)</p>
+        </div>
+
+        <!-- Formulário de Entrada -->
+        <form id="checkoutForm" class="space-y-5">
+            
+            <div>
+                <label for="nome" class="block text-sm font-medium text-slate-300 mb-1">Nome do Cliente</label>
+                <input type="text" id="nome" required placeholder="Ex: Maria Silva" 
+                       class="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-white placeholder-slate-500">
+            </div>
+
+            <div>
+                <label for="perfil" class="block text-sm font-medium text-slate-300 mb-1">Perfil (Estratégia de Desconto)</label>
+                <select id="perfil" class="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-white">
+                    <option value="PADRAO">Padrão (Sem desconto especial)</option>
+                    <option value="VIP">Cliente VIP (20% OFF)</option>
+                    <option value="ESTUDANTE">Estudante (15% OFF)</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="valor" class="block text-sm font-medium text-slate-300 mb-1">Valor Total da Compra (R$)</label>
+                <input type="number" id="valor" step="0.01" required min="1" placeholder="Ex: 150.00" 
+                       class="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none text-white placeholder-slate-500">
+            </div>
+
+            <button type="submit" id="submitBtn" 
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition-colors flex justify-center items-center gap-2 mt-4">
+                <span>Processar Checkout</span>
+                <div id="loader" class="loader"></div>
+            </button>
+        </form>
+
+        <!-- Área de Resultado -->
+        <div id="resultadoArea" class="mt-8 bg-slate-900 p-5 rounded-xl border border-slate-700 hidden opacity-0 transition-opacity duration-500">
+            <h2 class="text-lg font-bold text-green-400 mb-3 border-b border-slate-700 pb-2">Resultado da API:</h2>
+            <div class="space-y-2 text-sm">
+                <p class="text-slate-300">Cliente: <span id="resNome" class="font-bold text-white"></span></p>
+                <p class="text-slate-300">Perfil Identificado: <span id="resPerfil" class="font-bold text-blue-400"></span></p>
+                <p class="text-slate-300 mt-2">Valor Original: <span id="resValorOriginal" class="font-bold text-red-400 line-through"></span></p>
+                <p class="text-slate-300 text-lg mt-1">Valor Final: <span id="resValorDesconto" class="font-bold text-green-400 text-xl"></span></p>
+            </div>
+        </div>
+
+        <!-- Mensagem de Erro -->
+        <div id="erroArea" class="mt-4 text-red-400 text-sm text-center hidden">
+            Falha ao conectar com a API. Verifique se o Spring Boot está rodando e se a anotação @CrossOrigin foi adicionada.
+        </div>
+    </div>
+
+    <!-- Script de Integração com a API (Comportamento de Cliente REST) -->
+    <script>
+        document.getElementById('checkoutForm').addEventListener('submit', function(event) {
+            // Evita o recarregamento da página
+            event.preventDefault();
+
+            // Referências aos elementos da UI
+            const btn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            const resultadoArea = document.getElementById('resultadoArea');
+            const erroArea = document.getElementById('erroArea');
+            
+            // Coletando os dados do formulário
+            const nome = document.getElementById('nome').value;
+            const perfil = document.getElementById('perfil').value;
+            const valor = document.getElementById('valor').value;
+
+            // Preparando a URL da API do Spring Boot com os Query Parameters
+            const apiUrl = `http://localhost:8080/api/pedidos/checkout?nome=${encodeURIComponent(nome)}&perfil=${encodeURIComponent(perfil)}&valor=${encodeURIComponent(valor)}`;
+
+            // Resetando a UI
+            resultadoArea.classList.add('hidden');
+            resultadoArea.classList.remove('opacity-100');
+            erroArea.classList.add('hidden');
+            loader.style.display = 'block';
+            btn.disabled = true;
+
+            // Realizando a chamada (Fetch) para a API no Back-end
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro na resposta do servidor');
+                    }
+                    return response.json(); // Transformando o JSON recebido em objeto JS
+                })
+                .then(data => {
+                    // Preenchendo os dados do modelo recebido na tela
+                    document.getElementById('resNome').textContent = data.nomeCliente;
+                    document.getElementById('resPerfil').textContent = data.tipoCliente;
+                    
+                    // Formatando valores para moeda (BRL)
+                    const formatador = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+                    document.getElementById('resValorOriginal').textContent = formatador.format(data.valorOriginal);
+                    document.getElementById('resValorDesconto').textContent = formatador.format(data.valorComDesconto);
+
+                    // Exibindo a área de resultado
+                    resultadoArea.classList.remove('hidden');
+                    // Pequeno atraso para a transição de opacidade funcionar
+                    setTimeout(() => resultadoArea.classList.add('opacity-100'), 50);
+                })
+                .catch(error => {
+                    console.error('Erro na requisição:', error);
+                    erroArea.classList.remove('hidden');
+                })
+                .finally(() => {
+                    // Finalizando estado de carregamento
+                    loader.style.display = 'none';
+                    btn.disabled = false;
+                });
+        });
+    </script>
+</body>
+</html>
