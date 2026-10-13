@@ -1,0 +1,5 @@
+br\edu\ifsp\todo\controller\TarefaController.class
+br\edu\ifsp\todo\service\TarefaService.class
+br\edu\ifsp\todo\dto\TarefaDTO.class
+br\edu\ifsp\todo\TodoListApplication.class
+br\edu\ifsp\todo\model\Tarefa.class
